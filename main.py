@@ -1,5 +1,9 @@
 import arcade
+
 from room import RoomManager
+from combat_ui import CombatChoiceUI
+from start_choice_ui import StartChoiceUI
+from pause_menu import PauseMenu
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -12,109 +16,87 @@ class Game(arcade.Window):
     def __init__(self):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
 
-        self.paused = False
         self.room_manager = RoomManager()
 
-        self.player_list = arcade.SpriteList()
-        self.player = arcade.Sprite("assets/test_player.png", scale=3.5)
+        self.player = arcade.SpriteSolidColor(40, 40, arcade.color.BLUE)
         self.player.center_x = SCREEN_WIDTH // 2
         self.player.center_y = 100
-        self.player.change_x = 0
-        self.player.change_y = 0
+
+        self.player_list = arcade.SpriteList()
         self.player_list.append(self.player)
 
-        self.pause_title = arcade.Text(
-            "PAUSE",
-            SCREEN_WIDTH // 2,
-            SCREEN_HEIGHT // 2 + 120,
-            arcade.color.WHITE,
-            36,
-            anchor_x="center"
-        )
+        self.combat_ui = CombatChoiceUI()
+        self.start_ui = StartChoiceUI()
+        self.pause_menu = PauseMenu()
 
-        self.pause_continue_text = arcade.Text(
-            "CONTINUE",
-            SCREEN_WIDTH // 2,
-            SCREEN_HEIGHT // 2 + 15,
-            arcade.color.WHITE,
-            22,
-            anchor_x="center"
-        )
-
-        self.pause_to_start_text = arcade.Text(
-            "TO START",
-            SCREEN_WIDTH // 2,
-            SCREEN_HEIGHT // 2 - 75,
-            arcade.color.WHITE,
-            22,
-            anchor_x="center"
-        )
+        self.in_combat = False
+        self.combat_timer = 0.0
 
     def on_draw(self):
         self.clear()
         self.room_manager.current_room.draw()
         self.player_list.draw()
 
-        if self.paused:
-            self.draw_pause_menu()
-
-    def draw_pause_menu(self):
-        arcade.draw_lrbt_rectangle_filled(
-            0, SCREEN_WIDTH, 0, SCREEN_HEIGHT,
-            (0, 0, 0, 180)
-        )
-
-        arcade.draw_lbwh_rectangle_filled(
-            SCREEN_WIDTH / 2 - 130, SCREEN_HEIGHT / 2 + 30 - 30,
-            260, 60,
-            arcade.color.DARK_GREEN
-        )
-
-        arcade.draw_lbwh_rectangle_filled(
-            SCREEN_WIDTH / 2 - 130, SCREEN_HEIGHT / 2 - 60 - 30,
-            260, 60,
-            arcade.color.DARK_RED
-        )
-
-        self.pause_title.draw()
-        self.pause_continue_text.draw()
-        self.pause_to_start_text.draw()
+        self.combat_ui.draw()
+        self.start_ui.draw()
+        self.pause_menu.draw()
 
     def on_update(self, delta_time):
-        if self.paused:
+        if self.pause_menu.active:
+            return
+
+        room = self.room_manager.current_room
+
+        if self.in_combat:
+            self.combat_timer -= delta_time
+            if self.combat_timer <= 0:
+                room.enemies.clear()
+                room.cleared = True
+                room.exit.active = True
+                self.room_manager._save_room(room)
+                self.in_combat = False
             return
 
         self.player.center_x += self.player.change_x
         self.player.center_y += self.player.change_y
 
-        half_w = self.player.width / 2
-        half_h = self.player.height / 2
+        self.player.center_x = max(20, min(SCREEN_WIDTH - 20, self.player.center_x))
+        self.player.center_y = max(20, min(SCREEN_HEIGHT - 20, self.player.center_y))
 
-        self.player.center_x = max(
-            half_w, min(SCREEN_WIDTH - half_w, self.player.center_x)
-        )
-        self.player.center_y = max(
-            half_h, min(SCREEN_HEIGHT - half_h, self.player.center_y)
-        )
+        if room.type == "start" and arcade.check_for_collision(self.player, room.exit):
+            if not self.start_ui.active:
+                self.start_ui.start()
+            return
 
-        exit_portal = self.room_manager.current_room.exit
-        if exit_portal.active and arcade.check_for_collision(self.player, exit_portal):
-            self.room_manager.next_room()
-            self.player.center_x = SCREEN_WIDTH // 2
-            self.player.center_y = 100
+        if room.type != "start" and room.exit.active:
+            if arcade.check_for_collision(self.player, room.exit):
+                self.room_manager.next_room()
+                self.player.center_x = SCREEN_WIDTH // 2
+                self.player.center_y = 100
+                return
+
+        if room.enemies and not self.combat_ui.active and not self.in_combat:
+            self.combat_ui.start()
+
+        if room.type == "chest" and not room.chest_opened:
+            if arcade.check_for_collision(self.player, room.chest):
+                room.chest_opened = True
+                room.chest_list.clear()
+                room.exit.active = True
+                self.room_manager._save_room(room)
+
+        result = self.combat_ui.update(delta_time)
+        if result == "fight":
+            self.in_combat = True
+            self.combat_timer = 2.5
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.ESCAPE:
-            self.paused = not self.paused
+            self.pause_menu.toggle()
             return
 
-        if self.paused:
+        if self.pause_menu.active:
             return
-
-        if key == arcade.key.F:
-            room = self.room_manager.current_room
-            if room.type == "enemy":
-                room.exit.active = True
 
         if key == arcade.key.W:
             self.player.change_y = PLAYER_SPEED
@@ -132,23 +114,32 @@ class Game(arcade.Window):
             self.player.change_x = 0
 
     def on_mouse_press(self, x, y, button, modifiers):
-        if not self.paused:
+        if self.pause_menu.active:
+            result = self.pause_menu.on_mouse_press(x, y)
+            if result == "menu":
+                self.room_manager.go_to_start()
+                self.player.center_x = SCREEN_WIDTH // 2
+                self.player.center_y = 100
             return
 
-        if (
-            SCREEN_WIDTH // 2 - 130 < x < SCREEN_WIDTH // 2 + 130 and
-            SCREEN_HEIGHT // 2 < y < SCREEN_HEIGHT // 2 + 60
-        ):
-            self.paused = False
-
-        if (
-            SCREEN_WIDTH // 2 - 130 < x < SCREEN_WIDTH // 2 + 130 and
-            SCREEN_HEIGHT // 2 - 90 < y < SCREEN_HEIGHT // 2 - 30
-        ):
-            self.room_manager.reset()
+        combat_result = self.combat_ui.on_mouse_press(x, y)
+        if combat_result == "fight":
+            self.in_combat = True
+            self.combat_timer = 2.5
+        elif combat_result == "escape":
+            self.room_manager.go_to_start()
             self.player.center_x = SCREEN_WIDTH // 2
             self.player.center_y = 100
-            self.paused = False
+
+        start_result = self.start_ui.on_mouse_press(x, y)
+        if start_result == "new":
+            self.room_manager.start_new_run()
+            self.player.center_x = SCREEN_WIDTH // 2
+            self.player.center_y = 100
+        elif start_result == "continue":
+            self.room_manager.continue_run()
+            self.player.center_x = SCREEN_WIDTH // 2
+            self.player.center_y = 100
 
 
 if __name__ == "__main__":
