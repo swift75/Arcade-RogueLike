@@ -9,6 +9,20 @@ class CombatChoiceUI:
         self.active = False
         self.timer = 0.0
 
+        self.fight_rect = (
+            SCREEN_WIDTH // 2 - 160,
+            SCREEN_WIDTH // 2 - 40,
+            SCREEN_HEIGHT // 2 - 30,
+            SCREEN_HEIGHT // 2 + 30
+        )
+
+        self.escape_rect = (
+            SCREEN_WIDTH // 2 + 40,
+            SCREEN_WIDTH // 2 + 160,
+            SCREEN_HEIGHT // 2 - 30,
+            SCREEN_HEIGHT // 2 + 30
+        )
+
         self.time_text = arcade.Text(
             "",
             SCREEN_WIDTH // 2,
@@ -70,5 +84,14 @@ class CombatChoiceUI:
         if not self.active:
             return None
 
-        self.active = False
-        return "fight" if x < SCREEN_WIDTH // 2 else "escape"
+        l, r, b, t = self.fight_rect
+        if l < x < r and b < y < t:
+            self.active = False
+            return "fight"
+
+        l, r, b, t = self.escape_rect
+        if l < x < r and b < y < t:
+            self.active = False
+            return "escape"
+
+        return None
