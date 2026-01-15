@@ -71,7 +71,7 @@ class Room:
             self.portal_list.append(self.exit_back)
 
         if self.type == "enemy" and not self.cleared:
-            self.enemies.append(Enemy())
+            self.enemies.append(Enemy(self.number))
             self.exit_forward.active = False
 
         if self.type == "chest" and not self.chest_opened:
@@ -98,6 +98,10 @@ class Room:
 
         self.text.draw()
         self.enemies.draw()
+
+        for e in self.enemies:
+            e.draw_label()
+
         self.chest_list.draw()
 
         for p in self.portal_list:
