@@ -24,6 +24,42 @@ def random_room_type():
     return "enemy"
 
 
+def random_item():
+    roll = random.random()
+
+    if roll < 0.25:
+        return (
+            "weapon",
+            random.choice(["Sword", "Axe", "Dagger"]),
+            {
+                "attack": random.randint(4, 10),
+                "luck": random.randint(0, 3)
+            },
+            0
+        )
+
+    if roll < 0.50:
+        return (
+            "armor",
+            random.choice(["Armor", "Cloak", "Vest"]),
+            {
+                "defense": random.randint(3, 8),
+                "max_hp": random.randint(10, 30)
+            },
+            0
+        )
+
+    name, stats, duration = random.choice([
+        ("Rage Potion", {"attack": 5}, 3),
+        ("Iron Skin", {"defense": 4}, 3),
+        ("Vital Elixir", {"max_hp": 40}, 2),
+        ("Lucky Charm", {"luck": 5}, 4),
+        ("Battle Focus", {"attack": 3, "defense": 2}, 3),
+    ])
+
+    return ("consumable", name, stats, duration)
+
+
 class Portal(arcade.SpriteSolidColor):
     def __init__(self, x, y, color):
         super().__init__(70, 50, color)
@@ -38,8 +74,10 @@ class Portal(arcade.SpriteSolidColor):
 class Chest(arcade.SpriteSolidColor):
     def __init__(self):
         super().__init__(50, 40, arcade.color.GOLD)
-        self.center_x = SCREEN_WIDTH // 2
+        self.center_x = SCREEN_WIDTH // 2 - 70
         self.center_y = SCREEN_HEIGHT // 2
+        self.item = random_item()
+        self.opened = False
 
 
 class Room:
@@ -71,7 +109,20 @@ class Room:
             self.portal_list.append(self.exit_back)
 
         if self.type == "enemy" and not self.cleared:
-            self.enemies.append(Enemy(self.number))
+            enemy_count = random.randint(1, 3)
+
+            if enemy_count == 1:
+                final_multiplier = 1 / 3
+            elif enemy_count == 2:
+                final_multiplier = 1 / 2
+            else:
+                final_multiplier = 1.0
+
+            for _ in range(enemy_count):
+                self.enemies.append(
+                    Enemy(self.number, final_multiplier)
+                )
+
             self.exit_forward.active = False
 
         if self.type == "chest" and not self.chest_opened:
@@ -79,7 +130,7 @@ class Room:
             self.exit_forward.active = False
 
         self.text = arcade.Text(
-            f"ROOM #{self.number} — {self.type.upper()}",
+            f"ROOM №{self.number} — {self.type.upper()}",
             20,
             SCREEN_HEIGHT - 40,
             arcade.color.WHITE,
