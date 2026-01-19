@@ -33,7 +33,7 @@ ENEMY_DATA = {
 
 
 class Enemy(arcade.SpriteSolidColor):
-    def __init__(self, lvl):
+    def __init__(self, lvl, final_multiplier=1.0):
         self.enemy_type = random.choice(list(ENEMY_DATA.keys()))
         data = ENEMY_DATA[self.enemy_type]
 
@@ -44,10 +44,10 @@ class Enemy(arcade.SpriteSolidColor):
 
         coef = 1 + lvl / 10
 
-        self.max_hp = int(data["hp"] * coef)
+        self.max_hp = max(1, int(data["hp"] * coef * final_multiplier))
         self.hp = self.max_hp
-        self.attack = int(data["attack"] * coef)
-        self.defense = int(data["defense"] * coef)
+        self.attack = max(1, int(data["attack"] * coef * final_multiplier))
+        self.defense = max(0, int(data["defense"] * coef * final_multiplier))
 
     def draw_label(self):
         arcade.draw_text(
