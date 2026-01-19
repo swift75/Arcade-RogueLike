@@ -1,4 +1,5 @@
 import arcade
+import random
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -16,6 +17,7 @@ class CombatChoiceUI:
         self.victory = True
         self.hp_loss = 0
         self.exp_gain = 0
+        self.gold_gain = 0
 
         self.fight_rect = (
             SCREEN_WIDTH // 2 - 160,
@@ -104,11 +106,12 @@ class CombatChoiceUI:
         self.info_active = False
         self.win_chance = win_chance
 
-    def start_result(self, victory, hp_loss, exp_gain):
+    def start_result(self, victory, hp_loss, exp_gain, gold_gain):
         self.result_active = True
         self.victory = victory
         self.hp_loss = hp_loss
         self.exp_gain = exp_gain
+        self.gold_gain = gold_gain
         self.result_title.text = "VICTORY" if victory else "DEFEAT"
 
     def update(self, delta_time):
@@ -192,7 +195,7 @@ class CombatChoiceUI:
             arcade.draw_text(
                 f"HP LOST: {self.hp_loss}",
                 SCREEN_WIDTH // 2,
-                SCREEN_HEIGHT // 2 + 40,
+                SCREEN_HEIGHT // 2 + 60,
                 arcade.color.RED,
                 20,
                 anchor_x="center"
@@ -201,11 +204,21 @@ class CombatChoiceUI:
             arcade.draw_text(
                 f"EXP GAINED: {self.exp_gain}",
                 SCREEN_WIDTH // 2,
-                SCREEN_HEIGHT // 2,
+                SCREEN_HEIGHT // 2 + 20,
                 arcade.color.GREEN,
                 20,
                 anchor_x="center"
             )
+
+            if self.victory:
+                arcade.draw_text(
+                    f"GOLD GAINED: {self.gold_gain}",
+                    SCREEN_WIDTH // 2,
+                    SCREEN_HEIGHT // 2 - 20,
+                    arcade.color.GOLD,
+                    20,
+                    anchor_x="center"
+                )
 
             arcade.draw_lrbt_rectangle_filled(
                 *self.ok_rect,
