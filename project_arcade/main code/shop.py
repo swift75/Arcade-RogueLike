@@ -28,14 +28,14 @@ class ShopUI:
         self.items = [
             ("heal", "FULL HEAL", {}, 30),
 
-            ("consumable", "Rage Potion", {"attack": 5}, 25),
-            ("consumable", "Iron Skin", {"defense": 4}, 25),
-            ("consumable", "Vital Elixir", {"max_hp": 40}, 30),
-            ("consumable", "Lucky Charm", {"luck": 5}, 30),
-            ("consumable", "Battle Focus", {"attack": 3, "defense": 2}, 35),
+            ("consumable", "Rage Potion", {"attack": 5}, 60),
+            ("consumable", "Iron Skin", {"defense": 4}, 60),
+            ("consumable", "Vital Elixir", {"max_hp": 70}, ),
+            ("consumable", "Lucky Charm", {"luck": 5}, 70),
+            ("consumable", "Battle Focus", {"attack": 3, "defense": 2}, 80),
 
-            ("weapon", "Legendary Blade", {"attack": 15, "luck": 3}, 120),
-            ("armor", "Dragon Armor", {"defense": 14, "max_hp": 60, "luck": 2}, 120),
+            ("weapon", "Legendary Blade", {"attack": 15, "luck": 3}, 250),
+            ("armor", "Dragon Armor", {"defense": 14, "max_hp": 60, "luck": 2}, 250),
         ]
 
         self.item_rects = []
@@ -188,3 +188,4 @@ class ShopUI:
             )
             self.player.save_progress()
             return
+
