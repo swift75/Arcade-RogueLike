@@ -14,7 +14,7 @@ from main_menu import MainMenu
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
-SCREEN_TITLE = "Roguelike"
+SCREEN_TITLE = "Circle of Challenges"
 
 PLAYER_SPAWN_X = SCREEN_WIDTH // 2
 PLAYER_SPAWN_Y = SCREEN_HEIGHT // 2
@@ -629,4 +629,5 @@ class Game(arcade.Window):
 
 if __name__ == "__main__":
     Game()
+
     arcade.run()
